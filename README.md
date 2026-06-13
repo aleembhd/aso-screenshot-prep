@@ -1,8 +1,10 @@
-# ASO Screenshot Prep — Play Store
+# ASO Screenshot Prep — Play Store & App Store
 
 A [Claude Code](https://claude.com/claude-code) **skill** that turns your raw app screenshots into
 **titled, framed "scaffold" images** plus a **ready-to-paste prompt for each one** — so you generate
-the final, polished **Google Play Store** screenshots yourself in **ChatGPT** (or any image model).
+the final, polished store screenshots yourself in **ChatGPT** (or any image model). Supports **Google
+Play Store** (Android frame), **Apple App Store** (iPhone frame), or **both at once** from the same
+screenshots.
 
 It does the parts an AI is genuinely good at — analyzing your app, writing high-converting ASO titles,
 and laying out a clean device mockup — and **deliberately stops before image generation**. No image
@@ -16,19 +18,21 @@ API, no API keys, nothing to fail or bill you. You stay in control of the final 
 
 ## What you get
 
-For each screenshot, in an `aso-output/` folder inside your project:
+For each store you pick, in an `aso-output/` folder inside your project:
 
 ```
 aso-output/
-├── scaffolds/
-│   ├── 01-track.png        ← your screenshot, in an Android frame, with the ASO title on top
-│   ├── 02-organize.png
-│   └── …
-└── prompts/
-    ├── README.md           ← index: which scaffold ↔ which prompt ↔ which title
-    ├── 01-track.md         ← the exact prompt to paste into ChatGPT for 01
-    ├── 02-organize.md
-    └── …
+├── play/                       ← Google Play Store set (Android frame, 1080×1920)
+│   ├── scaffolds/
+│   │   ├── 01-track.png        ← your screenshot, in an Android frame, with the ASO title on top
+│   │   └── 02-organize.png
+│   └── prompts/
+│       ├── README.md           ← index: which scaffold ↔ which prompt ↔ which title
+│       ├── 01-track.md         ← the exact prompt to paste into ChatGPT for 01
+│       └── 02-organize.md
+└── appstore/                   ← Apple App Store set (iPhone frame, 1290×2796) — only if chosen
+    ├── scaffolds/ …
+    └── prompts/ …
 ```
 
 You then: **attach a scaffold image + paste its prompt into ChatGPT → download the polished
@@ -89,9 +93,11 @@ pip3 install --break-system-packages Pillow
    ```
 4. Follow the conversation:
    - Give it the **screenshots folder path**.
+   - Tell it **which store(s)**: Play Store, App Store, or both.
    - It reads your project + screenshots and asks a few **follow-up questions**.
    - It proposes a **title for each screenshot** and asks you to **confirm or change** them.
-   - On approval, it builds the **scaffolds** and writes a **prompt file per image** into `aso-output/`.
+   - On approval, it builds the **scaffolds** and writes a **prompt file per image** into
+     `aso-output/play/` and/or `aso-output/appstore/`.
 5. **Generate the finals in ChatGPT:** new chat → attach `aso-output/scaffolds/01-*.png` → paste
    `aso-output/prompts/01-*.md` → download. Do #1 first; for the rest, also attach your finished #1 so
    the set stays visually consistent.
@@ -100,15 +106,20 @@ pip3 install --break-system-packages Pillow
 
 ---
 
-## Optional: resize finals to a uniform 1080×1920
+## Optional: resize finals to a uniform size
 
-ChatGPT's portrait images are ~1024×1536 (already a valid Play size). To normalize the whole set:
+ChatGPT's portrait images are ~1024×1536 (already valid). To normalize a set, set the target for the
+store and point it at the folder where you saved your finished images:
+
+- **Play Store:** `TARGET_W=1080 TARGET_H=1920`
+- **App Store (iPhone 6.7"):** `TARGET_W=1290 TARGET_H=2796`
 
 **macOS:**
 ```bash
-TARGET_W=1080 && TARGET_H=1920
+TARGET_W=1080 && TARGET_H=1920          # ← change per store
+SRC="aso-output/play/finished"          # ← folder where you saved ChatGPT downloads
 mkdir -p aso-output/final
-for INPUT in aso-output/gemini-output/* aso-output/chatgpt-output/*; do
+for INPUT in "$SRC"/*; do
   [ -e "$INPUT" ] || continue
   OUT="aso-output/final/$(basename "${INPUT%.*}").png"
   cp "$INPUT" "$OUT"
@@ -123,7 +134,7 @@ done
 
 **Linux (ImageMagick):**
 ```bash
-for f in aso-output/chatgpt-output/*; do
+for f in aso-output/play/finished/*; do
   convert "$f" -resize 1080x1920^ -gravity center -extent 1080x1920 \
     "aso-output/final/$(basename "${f%.*}").png"
 done
@@ -131,11 +142,13 @@ done
 
 ---
 
-## Google Play screenshot specs (what the output targets)
+## Store screenshot specs (what the output targets)
 
-- Format: JPEG or 24-bit PNG (no transparency)
-- Each side 320–3840px; longest side ≤ 2× shortest (so up to 2:1 portrait)
-- 2–8 phone screenshots; the first 3–4 are what most users see
+**Google Play:** JPEG or 24-bit PNG (no transparency); each side 320–3840px; longest side ≤ 2× shortest
+(up to 2:1 portrait); 2–8 phone screenshots; first 3–4 are most-seen. Default output **1080×1920**.
+
+**Apple App Store:** exact sizes only — iPhone 6.7" **1290×2796**, 6.5" **1242×2688**, 6.9"
+**1320×2868**; up to 10 per size. Default output **1290×2796**.
 
 ---
 
@@ -161,8 +174,8 @@ The repo contains:
 - **Background colour / title:** the skill picks these with you, but you can re-run `compose.py`
   manually with different `--bg`, `--verb`, `--desc` to regenerate any scaffold.
 - **Different font:** drop a `.ttf`/`.otf` into `assets/` and update `FONT_PATH` in `compose.py`.
-- **iOS later:** the frame and canvas are parameterized; an App Store variant can be added without a
-  rewrite. (This version targets Play Store only.)
+- **Platform:** the skill asks you to pick Play Store, App Store, or both — it never assumes. Under the
+  hood `compose.py --platform android|ios` swaps the device frame; both frames ship in `assets/`.
 
 ---
 

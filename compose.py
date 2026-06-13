@@ -37,7 +37,12 @@ MAX_TEXT_W = int(CANVAS_W * 0.92)
 MAX_VERB_W = int(CANVAS_W * 0.92)
 
 FONT_PATH = os.path.join(os.path.dirname(__file__), "assets", "ArchivoBlack-Regular.ttf")
-FRAME_PATH = os.path.join(os.path.dirname(__file__), "assets", "device_frame.png")
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+
+
+def frame_path(platform):
+    """Pick the device frame asset for the target platform (android | ios)."""
+    return os.path.join(ASSETS_DIR, f"device_frame_{platform}.png")
 
 
 def hex_to_rgb(h):
@@ -84,8 +89,9 @@ def draw_centered(draw, y, text, font, max_w=None):
     return y
 
 
-def compose(bg_hex, verb, desc, screenshot_path, output_path):
+def compose(bg_hex, verb, desc, screenshot_path, output_path, platform="android"):
     bg = hex_to_rgb(bg_hex)
+    FRAME_PATH = frame_path(platform)
 
     # ── 1. Canvas ───────────────────────────────────────────────────
     canvas = Image.new("RGBA", (CANVAS_W, CANVAS_H), (*bg, 255))
@@ -161,15 +167,17 @@ def compose(bg_hex, verb, desc, screenshot_path, output_path):
 
 
 def main():
-    p = argparse.ArgumentParser(description="Compose App Store screenshot")
-    p.add_argument("--bg", required=True, help="Background hex colour (#E31837)")
-    p.add_argument("--verb", required=True, help="Action verb (TRACK)")
-    p.add_argument("--desc", required=True, help="Benefit descriptor (TRADING CARD PRICES)")
-    p.add_argument("--screenshot", required=True, help="Simulator screenshot path")
+    p = argparse.ArgumentParser(description="Compose a store-screenshot scaffold")
+    p.add_argument("--bg", required=True, help="Background hex colour (#1B2A4A)")
+    p.add_argument("--verb", required=True, help="Action verb / line 1 (TRACK)")
+    p.add_argument("--desc", required=True, help="Benefit descriptor / line 2 (ALL YOUR CALLS)")
+    p.add_argument("--screenshot", required=True, help="Raw app screenshot path")
     p.add_argument("--output", required=True, help="Output file path")
+    p.add_argument("--platform", choices=["android", "ios"], default="android",
+                   help="Device frame to use (android = Play Store, ios = App Store)")
     args = p.parse_args()
 
-    compose(args.bg, args.verb, args.desc, args.screenshot, args.output)
+    compose(args.bg, args.verb, args.desc, args.screenshot, args.output, args.platform)
 
 
 if __name__ == "__main__":
