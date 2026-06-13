@@ -182,26 +182,28 @@ The repo contains:
 
 ---
 
-## Does it work with other AI tools (Codex, Cursor, etc.)?
+## Use it in Codex, Cursor, or Gemini CLI too
 
-**The auto-running `/aso-screenshot-prep` command is a Claude feature** — the "skill" format
-(`SKILL.md`) is read by **Claude Code** and Claude apps that support Skills. Codex, Cursor, Gemini CLI,
-and similar tools do **not** auto-detect it as a slash command.
+The native skill is for Claude Code, but **the same `/aso-screenshot-prep` command works in Codex CLI,
+Cursor, and Gemini CLI** via ready-made adapter files in **[`integrations/`](integrations/)**. They
+reuse the same `SKILL.md` brain and `compose.py` — nothing about the Claude flow changes.
 
-**But the useful parts are fully portable**, because the engine is just a Python script + plain-text
-prompts:
+Quick version (full per-tool steps in [`integrations/README.md`](integrations/README.md)):
 
-- **`compose.py`** is ordinary Python — run it from any terminal, with any assistant, no Claude needed:
-  ```bash
-  python3 compose.py --platform android --bg "#1B2A4A" \
-    --verb "TRACK" --desc "ALL YOUR CALLS" \
-    --screenshot myshot.png --output out.png
-  ```
-- **The prompts** are tool-agnostic — paste them into ChatGPT, Gemini, or anything that edits images.
-- **With another AI tool**, you can simply paste `SKILL.md` and ask it to "follow these steps for my
-  screenshots" — it just won't be a one-word command like in Claude Code.
+```bash
+# 1. clone the repo somewhere and install Pillow
+git clone https://github.com/aleembhd/aso-screenshot-prep.git ~/aso-screenshot-prep
+pip3 install Pillow
 
-So: **best, one-command experience → Claude Code. Still works manually → anywhere.**
+# 2. copy the adapter for your tool, then run /aso-screenshot-prep in it:
+cp ~/aso-screenshot-prep/integrations/codex/aso-screenshot-prep.md   ~/.codex/prompts/        # Codex
+cp ~/aso-screenshot-prep/integrations/cursor/aso-screenshot-prep.md  ~/.cursor/commands/      # Cursor
+cp ~/aso-screenshot-prep/integrations/gemini/aso-screenshot-prep.toml ~/.gemini/commands/     # Gemini CLI
+```
+
+When the agent asks where the repo is, give it the clone path (e.g. `~/aso-screenshot-prep`). The
+`compose.py` script and the prompts are plain Python + text, so they're portable to any assistant —
+these adapters just make it a one-word command in each tool.
 
 ---
 
