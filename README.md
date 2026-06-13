@@ -40,45 +40,57 @@ screenshot → upload to Play Console.**
 
 ---
 
-## Requirements
+## Setup from zero (first-timer friendly — follow top to bottom)
 
-- **[Claude Code](https://claude.com/claude-code)** (CLI, desktop, or IDE extension)
-- **Python 3** with **[Pillow](https://pypi.org/project/Pillow/)** (the only dependency — the font and
-  device frame are bundled in this repo)
-- An image-capable chat tool for the final step — **ChatGPT** recommended
-- macOS or Linux (the optional resize step uses `sips` on macOS; a Linux alternative is noted below)
+No prior experience needed. Every command goes into your **Terminal** app.
 
----
+> **Open the Terminal:**
+> - **macOS:** press `Cmd + Space`, type **Terminal**, press Enter.
+> - **Windows:** install [WSL](https://learn.microsoft.com/windows/wsl/install) or use Git Bash, then open it.
+> - **Linux:** open your **Terminal** app.
+> You type a command, press **Enter**, and wait for it to finish before the next one.
 
-## Install (one-time)
+### Step 1 — Install the things this needs (one time)
 
-A Claude Code skill is just a folder containing `SKILL.md`. "Installing" = cloning this repo into your
-skills directory.
+1. **Claude Code** — the app this skill runs inside. Install it from
+   **https://claude.com/claude-code** and sign in.
+2. **Python 3** — check if you already have it:
+   ```bash
+   python3 --version
+   ```
+   If you see a version number (e.g. `Python 3.12`), you're good. If it says "command not found",
+   install it from **https://www.python.org/downloads/** (or `brew install python3` on macOS).
+3. **Pillow** — the one library the script needs:
+   ```bash
+   pip3 install Pillow
+   ```
+   If that errors with "externally-managed-environment" (common on macOS), run:
+   ```bash
+   pip3 install --break-system-packages Pillow
+   ```
+4. **ChatGPT** (or any image-capable chat) — for the final image step. A normal account is fine.
 
-**Option A — available in every project (recommended):**
+### Step 2 — Install this skill (one time)
+
+A Claude Code "skill" is just a folder. Installing it = copying this repo into a special folder Claude
+looks in. Copy-paste this exactly:
+
 ```bash
-git clone https://github.com/aleembhd/aso-screenshot-prep.git \
-  ~/.claude/skills/aso-screenshot-prep
+git clone https://github.com/aleembhd/aso-screenshot-prep.git ~/.claude/skills/aso-screenshot-prep
 ```
 
-**Option B — only one project:**
-```bash
-git clone https://github.com/aleembhd/aso-screenshot-prep.git \
-  /path/to/your/project/.claude/skills/aso-screenshot-prep
-```
+> `~` means your home folder. So this lands in `~/.claude/skills/aso-screenshot-prep`, which Claude
+> Code automatically reads. (Want it in just one project instead of everywhere? Clone into that
+> project's `.claude/skills/aso-screenshot-prep` folder instead.)
 
-**Install the one dependency:**
-```bash
-pip3 install Pillow
-# macOS with Homebrew Python may require:
-pip3 install --break-system-packages Pillow
-```
+### Step 3 — Turn it on
 
-**Then restart Claude Code.** The skill is now available as the slash command
-**`/aso-screenshot-prep`**.
+**Close Claude Code completely and open it again.** (It only notices new skills on restart.)
 
-> Note: there is no `claude install-skill` command — cloning into the skills folder above *is* the
-> install. That's all Claude Code needs.
+To confirm it worked, type `/` in Claude Code and look for **`aso-screenshot-prep`** in the list — or
+just type `/aso-screenshot-prep`. If it's there, setup is done. ✅
+
+> There is **no** `claude install-skill` command — the `git clone` in Step 2 *is* the install.
 
 ---
 
@@ -98,11 +110,12 @@ pip3 install --break-system-packages Pillow
    - It proposes a **title for each screenshot** and asks you to **confirm or change** them.
    - On approval, it builds the **scaffolds** and writes a **prompt file per image** into
      `aso-output/play/` and/or `aso-output/appstore/`.
-5. **Generate the finals in ChatGPT:** new chat → attach `aso-output/scaffolds/01-*.png` → paste
-   `aso-output/prompts/01-*.md` → download. Do #1 first; for the rest, also attach your finished #1 so
-   the set stays visually consistent.
-6. **(Optional) Make a uniform 1080×1920 set** — see below.
-7. **Upload** to Play Console → Main store listing → Phone screenshots (2–8 images, in order).
+5. **Generate the finals in ChatGPT:** new chat → attach `aso-output/play/scaffolds/01-*.png` → paste
+   the matching `aso-output/play/prompts/01-*.md` → download. (For App Store, use the `appstore/`
+   folders.) Do #1 first; for the rest, also attach your finished #1 so the set stays visually consistent.
+6. **(Optional) Normalize the set** to one size — see below.
+7. **Upload:** Play Console → Main store listing → Phone screenshots (2–8, in order), and/or App Store
+   Connect → your app → Screenshots (up to 10).
 
 ---
 
@@ -157,15 +170,38 @@ done
 | Step | Tool | Cost |
 |------|------|------|
 | Analyze app + write titles | Claude (the skill's instructions) | your normal Claude usage |
-| Stamp title + Android frame onto screenshot | `compose.py` (Pillow, local) | free |
+| Stamp title + phone frame onto screenshot | `compose.py` (Pillow, local) | free |
 | Write a tailored prompt per image | Claude | your normal Claude usage |
 | Generate the final polished screenshot | **you, in ChatGPT** | your ChatGPT plan |
 
 The repo contains:
 - `SKILL.md` — the instructions Claude follows
-- `compose.py` — builds the scaffold (headline + Android frame + screenshot)
-- `generate_frame.py` — regenerates the Android device frame asset
-- `assets/` — the bundled font (Archivo Black, OFL) and device frame
+- `compose.py` — builds the scaffold (title + phone frame + screenshot); `--platform android|ios`
+- `generate_frame.py` — regenerates the Android + iPhone device frame assets
+- `assets/` — the bundled font (Archivo Black, OFL) and both device frames
+
+---
+
+## Does it work with other AI tools (Codex, Cursor, etc.)?
+
+**The auto-running `/aso-screenshot-prep` command is a Claude feature** — the "skill" format
+(`SKILL.md`) is read by **Claude Code** and Claude apps that support Skills. Codex, Cursor, Gemini CLI,
+and similar tools do **not** auto-detect it as a slash command.
+
+**But the useful parts are fully portable**, because the engine is just a Python script + plain-text
+prompts:
+
+- **`compose.py`** is ordinary Python — run it from any terminal, with any assistant, no Claude needed:
+  ```bash
+  python3 compose.py --platform android --bg "#1B2A4A" \
+    --verb "TRACK" --desc "ALL YOUR CALLS" \
+    --screenshot myshot.png --output out.png
+  ```
+- **The prompts** are tool-agnostic — paste them into ChatGPT, Gemini, or anything that edits images.
+- **With another AI tool**, you can simply paste `SKILL.md` and ask it to "follow these steps for my
+  screenshots" — it just won't be a one-word command like in Claude Code.
+
+So: **best, one-command experience → Claude Code. Still works manually → anywhere.**
 
 ---
 
